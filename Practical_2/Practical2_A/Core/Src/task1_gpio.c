@@ -16,16 +16,16 @@
 #include "prac2a.h"
 
 /* TODO 1.1  Peripheral base addresses: the memory map in RM0091 section 2. */
-#define RCC_BASE_ADDR       0x00000000UL    /* <- TODO */
-#define GPIOC_BASE_ADDR     0x00000000UL    /* <- TODO */
+#define RCC_BASE_ADDR       0x40021000UL       /* <- TODO */
+#define GPIOC_BASE_ADDR     0x48000800UL    /* <- TODO */
 
 /* TODO 1.2  Register offsets: the register map at the end of the RCC chapter
  *           and of the GPIO chapter of RM0091. */
-#define RCC_AHBENR_OFFSET   0x00UL          /* <- TODO */
+#define RCC_AHBENR_OFFSET   0x14UL         /* <- TODO */
 #define GPIO_MODER_OFFSET   0x00UL          /* <- TODO */
-#define GPIO_ODR_OFFSET     0x00UL          /* <- TODO */
-#define GPIO_BSRR_OFFSET    0x00UL          /* <- TODO */
-#define GPIO_BRR_OFFSET     0x00UL          /* <- TODO */
+#define GPIO_ODR_OFFSET     0x14UL          /* <- TODO */
+#define GPIO_BSRR_OFFSET    0x18UL          /* <- TODO */
+#define GPIO_BRR_OFFSET     0x28UL          /* <- TODO */
 
 /* One pointer is declared for you to show the pattern. Be ready to explain
  * what `volatile` does here, and what can go wrong without it.
@@ -33,6 +33,18 @@
  * TODO 1.3  Declare pointers for the GPIOC registers you use, the same way. */
 static volatile uint32_t * const pRCC_AHBENR =
         (volatile uint32_t *)(RCC_BASE_ADDR + RCC_AHBENR_OFFSET);
+
+static volatile uint32_t * const pGPIOC_MODER =
+        (volatile uint32_t *)(GPIOC_BASE_ADDR + GPIO_MODER_OFFSET);
+
+static volatile uint32_t * const pGPIOC_ODR =
+        (volatile uint32_t *)(GPIOC_BASE_ADDR + GPIO_ODR_OFFSET);
+
+static volatile uint32_t * const pGPIOC_BSRR =
+        (volatile uint32_t *)(GPIOC_BASE_ADDR + GPIO_BSRR_OFFSET);
+
+static volatile uint32_t * const pGPIOC_BRR =
+        (volatile uint32_t *)(GPIOC_BASE_ADDR + GPIO_BRR_OFFSET);
 
 /* TODO 1.4  Once TODO 1.1 and 1.2 are done, UNCOMMENT these checks. They
  *           compare your addresses with the CMSIS device header, so a wrong
@@ -66,12 +78,14 @@ void task1_gpio_init(void)
      *           bit. Use a read-modify-write so clocks other code has already
      *           enabled are kept. Be ready to explain what the board does if
      *           you forget this. */
-
+	 *pRCC_AHBENR |= (1UL << 19);
     /* TODO 1.6  Put PC13 into general purpose output mode. MODER has two bits
      *           per pin: clear both of PC13's bits, then set the output value,
      *           leaving every other pin unchanged. */
-
+	 *pGPIOC_MODER &= ~(3UL << (13u * 2u));
+	 *pGPIOC_MODER |=  (1UL << (13u * 2u));
     /* TODO 1.7  Drive PC13 to a known starting level. */
+	 *pGPIOC_BRR = (1UL << 13);
 }
 
 void task1_gpio_update(uint32_t now)
@@ -85,6 +99,17 @@ void task1_gpio_update(uint32_t now)
     /* TODO 1.8  Toggle PC13: read its present level, then drive the opposite
      *           level. There are set-only and reset-only registers as well as
      *           ODR - be ready to say why you chose the one you used. */
+
+    if ((*pGPIOC_ODR & (1UL << 13)) != 0u)
+    {
+        /* PC13 is HIGH -> make it LOW */
+        *pGPIOC_BRR = (1UL << 13);
+    }
+    else
+    {
+        /* PC13 is LOW -> make it HIGH */
+        *pGPIOC_BSRR = (1UL << 13);
+    }
 
     task1_toggle_count++;
 }
